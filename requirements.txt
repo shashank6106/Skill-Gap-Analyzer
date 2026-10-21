@@ -1,0 +1,13 @@
+# Core Database
+pymongo>=4.9.0
+python-dotenv>=1.0.0
+
+# User Interface
+streamlit>=1.40.0
+plotly>=5.24.0
+
+# Resume & NLP Processing
+pypdf>=5.0.0
+scikit-learn>=1.5.0
+numpy>=1.26.0
+pandas>=2.2.0
