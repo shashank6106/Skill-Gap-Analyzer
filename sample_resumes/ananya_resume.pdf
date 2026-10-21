@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [3 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >>
+endobj
+4 0 obj
+<< /Length 722 >>
+stream
+BT /F1 11 Tf 50 750 Td 15 TL /F1 16 Tf (Ananya Sharma) ' /F1 11 Tf T* (Email: ananya.sharma@example.com | Phone: +91 98765 43211 | Location: Pune) ' () ' T* (Education) ' T* (B.Tech in Data Science & Artificial Intelligence) ' (Tech University - CGPA 9.1) ' () ' T* (Technical Skills) ' T* (Data Analysis: Python, SQL, Statistics, Excel) ' (BI & Visualization: Power BI, Tableau, Matplotlib) ' (Databases: PostgreSQL, MySQL) ' () ' T* (Projects) ' T* (1. Retail Sales Forecasting Dashboard: Built interactive Power BI reports and SQL queries.) ' (2. Customer Churn Statistical Study: Applied hypothesis testing and regression in Python.) ' () ' T* (Experience) ' T* (Data Analyst Intern at FinMetrics Corp \(1 year\)) ' ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000241 00000 n 
+0000001014 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+1084
+%%EOF
