@@ -2,6 +2,9 @@
 pymongo>=4.9.0
 python-dotenv>=1.0.0
 
+# AI & RAG Engine
+google-genai>=0.1.0
+
 # User Interface
 streamlit>=1.40.0
 plotly>=5.24.0

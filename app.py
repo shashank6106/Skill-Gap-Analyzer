@@ -1,6 +1,6 @@
 """
 Skill Gap Analyzer
-Minimalist Light & Dark Enterprise Edition.
+Minimalist Light & Dark Enterprise Edition with RAG Engine.
 """
 
 import os
@@ -30,6 +30,10 @@ from database.seed_data import seed_database
 from engine.resume_parser import parse_resume_content
 from engine.skill_extractor import extract_skills_from_text
 from engine.matcher import calculate_skill_gap
+from engine.rag_engine import (
+    seed_vector_knowledge_base, search_vector_knowledge_base,
+    ask_career_copilot, generate_personalized_projects_rag
+)
 
 
 # -----------------------------------------------------------------------------
@@ -47,14 +51,12 @@ st.set_page_config(
 # -----------------------------------------------------------------------------
 st.markdown("""
 <style>
-    /* Global Typography & Spacing */
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
     
     html, body, [class*="css"] {
         font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     }
     
-    /* Clean Minimalist Header */
     .app-header {
         padding: 0.8rem 0 1.2rem 0;
         border-bottom: 1px solid #E2E8F0;
@@ -66,9 +68,6 @@ st.markdown("""
         letter-spacing: -0.03em;
         color: #0F172A;
         margin: 0;
-        display: flex;
-        align-items: center;
-        gap: 0.5rem;
     }
     .app-tagline {
         font-size: 0.95rem;
@@ -86,7 +85,6 @@ st.markdown("""
         border-radius: 9999px;
         font-size: 0.8rem;
         font-weight: 500;
-        letter-spacing: 0.02em;
     }
     .status-dot {
         width: 7px;
@@ -96,7 +94,7 @@ st.markdown("""
         display: inline-block;
     }
 
-    /* Minimalist Stat Cards (Light and Dark combination) */
+    /* Minimalist Stat Cards */
     .metric-card {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
@@ -124,7 +122,7 @@ st.markdown("""
         line-height: 1.1;
     }
 
-    /* Minimalist Skill Badges */
+    /* Minimalist Badges */
     .badge-match {
         display: inline-flex;
         align-items: center;
@@ -173,17 +171,13 @@ st.markdown("""
         font-weight: 500;
     }
 
-    /* Score Card Component */
+    /* Score Card */
     .score-container {
         background: #0F172A;
         color: #FFFFFF;
         padding: 1.5rem;
         border-radius: 10px;
         text-align: center;
-        display: flex;
-        flex-direction: column;
-        justify-content: center;
-        align-items: center;
     }
     .score-number {
         font-size: 3rem;
@@ -199,15 +193,24 @@ st.markdown("""
         font-weight: 500;
     }
 
-    /* Roadmap Item */
-    .roadmap-card {
+    /* Cards */
+    .card-box {
+        background-color: #FFFFFF;
+        border: 1px solid #E2E8F0;
+        border-radius: 8px;
+        padding: 1.1rem;
+        margin-bottom: 0.9rem;
+    }
+    .card-box-accent {
         background-color: #FFFFFF;
         border: 1px solid #E2E8F0;
         border-left: 3px solid #0F172A;
         border-radius: 8px;
         padding: 1rem 1.2rem;
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.85rem;
     }
+
+    /* Priority Badges */
     .priority-tag-high {
         background-color: #0F172A;
         color: #FFFFFF;
@@ -228,18 +231,8 @@ st.markdown("""
         text-transform: uppercase;
         letter-spacing: 0.05em;
     }
-    .priority-tag-normal {
-        background-color: #64748B;
-        color: #FFFFFF;
-        font-size: 0.72rem;
-        font-weight: 700;
-        padding: 2px 8px;
-        border-radius: 4px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
-    }
 
-    /* Sidebar Clean Styling */
+    /* Sidebar Styling */
     [data-testid="stSidebar"] {
         border-right: 1px solid #334155;
     }
@@ -265,13 +258,13 @@ st.markdown("""
 
 
 # -----------------------------------------------------------------------------
-# SIDEBAR: MINIMALIST CONTROLS
+# SIDEBAR: CONTROLS & API CONFIG
 # -----------------------------------------------------------------------------
 with st.sidebar:
     st.markdown("""
     <div class="sidebar-brand">
         <div class="sidebar-title">SKILL GAP ANALYZER</div>
-        <div class="sidebar-sub">Competency & Workforce Analytics</div>
+        <div class="sidebar-sub">RAG-Powered Career Intelligence</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -289,23 +282,40 @@ with st.sidebar:
     else:
         st.error(f"Engine Offline: {conn_msg}")
 
-    st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:0.5rem;'>Database Management</p>", unsafe_allow_html=True)
-    if st.button("Reset / Reload Dataset", use_container_width=True):
-        with st.spinner("Reloading dataset collections..."):
+    # Gemini API Key Input
+    st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:0.25rem;'>AI & LLM Configuration</p>", unsafe_allow_html=True)
+    gemini_key_input = st.text_input(
+        "Google Gemini API Key (Optional)",
+        type="password",
+        value=os.getenv("GEMINI_API_KEY", ""),
+        help="Optional: Paste your key from https://aistudio.google.com/app/apikey. If empty, high-quality local RAG synthesis runs automatically."
+    )
+    if gemini_key_input:
+        os.environ["GEMINI_API_KEY"] = gemini_key_input.strip()
+        st.caption("🟢 Gemini API Key Active")
+    else:
+        st.caption("⚪ Local RAG Mode Active (Free/Offline)")
+
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:0.5rem;'>Vector & Database Management</p>", unsafe_allow_html=True)
+    
+    if st.button("Reset / Reload Dataset & Vectors", use_container_width=True):
+        with st.spinner("Seeding database and vector embeddings..."):
             seed_database(drop_existing=True)
-            st.success("Dataset refreshed successfully.")
+            v_count = seed_vector_knowledge_base(force_refresh=True, api_key=gemini_key_input)
+            st.success(f"Dataset refreshed with {v_count} vector documents!")
             st.rerun()
 
     st.markdown("<div style='height: 15px;'></div>", unsafe_allow_html=True)
-    st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:0.5rem;'>System Specifications</p>", unsafe_allow_html=True)
+    st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:0.5rem;'>Architecture Stack</p>", unsafe_allow_html=True)
     st.markdown("""
     <div style="font-size: 0.8rem; color: #94A3B8; line-height: 1.8;">
-        • Core: Python 3.14<br>
+        • LLM: Google Gemini (gemini-2.5-flash)<br>
+        • Vector Search: MongoDB Embeddings<br>
         • Database Driver: PyMongo<br>
         • Text Parsing: PyPDF v5<br>
-        • Extraction: NLP Taxonomy<br>
-        • Similarity: Scikit-Learn TF-IDF<br>
-        • UI: Streamlit & Plotly
+        • ML Matching: Scikit-Learn TF-IDF<br>
+        • Interface: Streamlit & Plotly
     </div>
     """, unsafe_allow_html=True)
 
@@ -318,7 +328,7 @@ with col_h1:
     st.markdown("""
     <div class="app-header">
         <h1 class="app-title">Skill Gap Analyzer</h1>
-        <div class="app-tagline">Precision talent benchmarking, automated skill extraction, and personalized learning roadmaps</div>
+        <div class="app-tagline">RAG-driven competency benchmarking, automated resume analysis, and tailored career intelligence</div>
     </div>
     """, unsafe_allow_html=True)
 
@@ -376,8 +386,11 @@ st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 # MAIN NAVIGATION TABS
 # -----------------------------------------------------------------------------
-tab_analysis, tab_jobs, tab_analytics, tab_console = st.tabs([
+tab_analysis, tab_copilot, tab_projects, tab_vector, tab_jobs, tab_analytics, tab_console = st.tabs([
     "Skill Gap Analysis",
+    "AI Career Copilot (RAG)",
+    "Project Generator (RAG)",
+    "Vector Search Explorer",
     "Job Openings",
     "Market Analytics",
     "Data Engine & Query Lab"
@@ -504,6 +517,9 @@ with tab_analysis:
                 insert_analysis(analysis_doc)
                 st.session_state["active_result"] = analysis_result
                 st.session_state["active_doc"] = analysis_doc
+                st.session_state["current_candidate_name"] = extracted_name
+                st.session_state["current_candidate_skills"] = extracted_skills
+                st.session_state["current_target_job"] = selected_job
 
     # Display Analysis Outcome
     if "active_result" in st.session_state:
@@ -548,7 +564,7 @@ with tab_analysis:
             for r in res["recommendations"]:
                 p_class = f"priority-tag-{r['priority'].lower()}"
                 st.markdown(f"""
-                <div class="roadmap-card">
+                <div class="card-box-accent">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.4rem;">
                         <span style="font-weight:700; color:#0F172A; font-size:0.95rem;">{r['skill']}</span>
                         <span class="{p_class}">{r['priority']} Priority</span>
@@ -561,12 +577,156 @@ with tab_analysis:
                     </div>
                 </div>
                 """, unsafe_allow_html=True)
-        else:
-            st.info("No gaps identified. Candidate is fully qualified for this position.")
 
 
 # =============================================================================
-# TAB 2: JOB OPENINGS
+# TAB 2: AI CAREER COPILOT (RAG)
+# =============================================================================
+with tab_copilot:
+    st.markdown("##### ✦ AI Career Copilot & Q&A (RAG Engine)")
+    st.caption("Retrieval-Augmented Generation: Answers are grounded by retrieving curriculum modules and job patterns from the MongoDB vector store.")
+
+    # Context setup
+    c_name = st.session_state.get("current_candidate_name", "Candidate")
+    c_skills = st.session_state.get("current_candidate_skills", ["Python", "SQL", "MongoDB"])
+    t_job = st.session_state.get("current_target_job", {"title": "Data Analyst", "company": "ABC Technologies", "required_skills": ["Python", "SQL", "Power BI", "Excel", "Statistics"]})
+    act_res = st.session_state.get("active_result", {"matched_skills": ["Python", "SQL"], "missing_skills": ["Power BI", "Excel", "Statistics"]})
+
+    with st.container(border=True):
+        st.markdown(f"**Active Candidate:** `{c_name}` &nbsp;|&nbsp; **Target Role:** `{t_job['title']} @ {t_job['company']}`")
+        st.markdown(f"**Identified Gaps:** `{', '.join(act_res['missing_skills']) if act_res['missing_skills'] else 'None'}`")
+
+    # Quick prompt buttons
+    st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#475569; margin-top:0.75rem; margin-bottom:0.3rem;'>Suggested Questions:</p>", unsafe_allow_html=True)
+    q_col1, q_col2, q_col3 = st.columns(3)
+    
+    suggested_q = None
+    if q_col1.button("How can I prepare for technical interviews for this role?"):
+        suggested_q = "How can I prepare for technical interviews for this role given my specific skill gaps?"
+    if q_col2.button("Generate a 3-week daily study schedule"):
+        suggested_q = "Generate a structured 3-week daily study schedule focusing on my missing skills."
+    if q_col3.button("How do I explain my missing skills to an interviewer?"):
+        suggested_q = "How can I best articulate and explain my skill gaps during an interview without looking underqualified?"
+
+    custom_query = st.text_input("Ask Career Copilot a question:", value=suggested_q or "", placeholder="e.g. What specific topics in Docker and AWS should I learn first?")
+
+    if st.button("Generate Grounded Advice (RAG)", type="primary"):
+        if not custom_query.strip():
+            st.warning("Please enter a question or click one of the suggestions above.")
+        else:
+            with st.spinner("Retrieving MongoDB knowledge vectors and synthesizing response with Gemini..."):
+                answer_text, retrieved_sources = ask_career_copilot(
+                    candidate_name=c_name,
+                    candidate_skills=c_skills,
+                    job_title=t_job["title"],
+                    job_company=t_job["company"],
+                    job_required_skills=t_job.get("required_skills", []),
+                    matched_skills=act_res.get("matched_skills", []),
+                    missing_skills=act_res.get("missing_skills", []),
+                    user_query=custom_query,
+                    api_key=gemini_key_input
+                )
+
+                st.markdown("---")
+                st.markdown("#### 💡 Copilot Response")
+                st.markdown(answer_text)
+
+                with st.expander("🔍 View Retrieved Knowledge Chunks (from MongoDB Vector Store)"):
+                    for idx, src in enumerate(retrieved_sources, 1):
+                        st.markdown(f"**{idx}. [{src['category'].upper()}] {src['title']}** (Relevance: `{src['score']}%`)")
+                        st.caption(src["content"])
+
+
+# =============================================================================
+# TAB 3: PERSONALIZED PROJECT GENERATOR (RAG)
+# =============================================================================
+with tab_projects:
+    st.markdown("##### 🛠️ Personalized Project Generator")
+    st.caption("Generates resume-ready project architectures combining your existing strengths with your missing competencies to prove hands-on mastery.")
+
+    c_skills = st.session_state.get("current_candidate_skills", ["Python", "SQL", "MongoDB"])
+    t_job = st.session_state.get("current_target_job", {"title": "Cloud Data Engineer", "company": "DataNova Systems"})
+    act_res = st.session_state.get("active_result", {"missing_skills": ["AWS", "Docker", "Apache Spark"]})
+
+    with st.container(border=True):
+        st.markdown(f"**Role:** `{t_job['title']} @ {t_job['company']}`")
+        st.markdown(f"**Existing Strengths:** `{', '.join(c_skills)}` &nbsp;|&nbsp; **Skill Gaps to Bridge:** `{', '.join(act_res['missing_skills'])}`")
+
+    if st.button("Generate 3 Custom Portfolio Projects", type="primary"):
+        with st.spinner("Retrieving architecture templates from MongoDB and generating project specs..."):
+            projects = generate_personalized_projects_rag(
+                candidate_skills=c_skills,
+                job_title=t_job["title"],
+                job_company=t_job["company"],
+                missing_skills=act_res.get("missing_skills", []),
+                api_key=gemini_key_input
+            )
+            st.session_state["rag_projects"] = projects
+
+    if "rag_projects" in st.session_state:
+        st.markdown("---")
+        st.markdown("#### 📐 Recommended Portfolio Projects")
+        for idx, p in enumerate(st.session_state["rag_projects"], 1):
+            with st.container(border=True):
+                st.markdown(f"### Project {idx}: {p['title']}")
+                st.markdown(f"*{p['description']}*")
+                
+                col_p1, col_p2 = st.columns(2)
+                with col_p1:
+                    st.markdown("**Skills Bridged:**")
+                    p_bridged = "".join([f'<span class="badge-gap">{s}</span>' for s in p.get('skills_bridged', [])])
+                    st.markdown(p_bridged, unsafe_allow_html=True)
+                with col_p2:
+                    st.markdown("**Strengths Leveraged:**")
+                    p_used = "".join([f'<span class="badge-match">{s}</span>' for s in p.get('existing_skills_used', [])])
+                    st.markdown(p_used, unsafe_allow_html=True)
+
+                st.markdown(f"**Architecture Flow:** `{p.get('architecture_summary', 'Distributed Pipeline')}`")
+                st.markdown("**Resume Bullet Point:**")
+                st.code(p.get("resume_bullet", "Developed and launched project."), language="text")
+
+
+# =============================================================================
+# TAB 4: VECTOR SEARCH EXPLORER (MONGODB VECTOR STORE)
+# =============================================================================
+with tab_vector:
+    st.markdown("##### 🧬 MongoDB Vector Search Explorer")
+    st.caption("Demonstrates dense vector search over documents stored directly in MongoDB collection: `knowledge_vectors`.")
+
+    col_vs1, col_vs2 = st.columns([3, 1])
+    with col_vs1:
+        v_query = st.text_input("Enter Semantic Search Query:", value="containerization and distributed big data pipelines")
+    with col_vs2:
+        v_category = st.selectbox("Category Filter:", ["All Categories", "job", "learning_roadmap", "project_pattern"])
+
+    filter_cat = None if v_category == "All Categories" else v_category
+    
+    if st.button("Execute Vector Search in MongoDB", type="primary"):
+        with st.spinner("Computing query embedding and calculating cosine similarity across MongoDB vectors..."):
+            v_results = search_vector_knowledge_base(
+                query=v_query,
+                top_k=5,
+                category=filter_cat,
+                api_key=gemini_key_input
+            )
+
+            st.markdown("---")
+            st.markdown(f"**Top Ranked Vector Matches in MongoDB (`knowledge_vectors`):**")
+            for res in v_results:
+                with st.container(border=True):
+                    col_r1, col_r2 = st.columns([4, 1])
+                    with col_r1:
+                        st.markdown(f"**[{res['category'].upper()}] {res['title']}**")
+                        st.markdown(f"<p style='font-size:0.85rem; color:#475569;'>{res['content']}</p>", unsafe_allow_html=True)
+                        if res.get("skills"):
+                            b_str = "".join([f'<span class="badge-neutral">{s}</span>' for s in res['skills']])
+                            st.markdown(b_str, unsafe_allow_html=True)
+                    with col_r2:
+                        st.metric("Similarity", f"{res['score']}%")
+
+
+# =============================================================================
+# TAB 5: JOB OPENINGS
 # =============================================================================
 with tab_jobs:
     st.markdown("##### Job Openings & Requirements Directory")
@@ -621,7 +781,7 @@ with tab_jobs:
 
 
 # =============================================================================
-# TAB 3: MARKET ANALYTICS
+# TAB 6: MARKET ANALYTICS
 # =============================================================================
 with tab_analytics:
     st.markdown("##### Talent Supply, Demand & Competency Intelligence")
@@ -721,7 +881,7 @@ with tab_analytics:
 
 
 # =============================================================================
-# TAB 4: DATA ENGINE & QUERY LAB
+# TAB 7: DATA ENGINE & QUERY LAB
 # =============================================================================
 with tab_console:
     st.markdown("##### Data Engine & Query Console")
@@ -839,7 +999,7 @@ db.users.update_one(
     with sub3:
         st.markdown("<p style='font-size:0.9rem; font-weight:700; color:#0F172A;'>Collection Browser</p>", unsafe_allow_html=True)
         db = get_database()
-        coll_target = st.selectbox("Collection:", ["users", "jobs", "resumes", "analyses", "skills", "recommendations"])
+        coll_target = st.selectbox("Collection:", ["users", "jobs", "resumes", "analyses", "skills", "recommendations", "knowledge_vectors"])
         raw_docs = list(db[coll_target].find().limit(5))
         st.caption(f"Showing first 5 of {db[coll_target].count_documents({})} documents:")
         for d in raw_docs:
@@ -848,15 +1008,26 @@ db.users.update_one(
                 d["created_at"] = str(d["created_at"])
             if "uploaded_at" in d:
                 d["uploaded_at"] = str(d["uploaded_at"])
+            if "embedding" in d and isinstance(d["embedding"], list):
+                d["embedding"] = f"[{len(d['embedding'])} dense vector dimensions]"
             st.json(d)
 
     with sub4:
         st.markdown("<p style='font-size:0.9rem; font-weight:700; color:#0F172A;'>Viva & Technical Examination Reference</p>", unsafe_allow_html=True)
-        with st.expander("Why a document database instead of a relational database for this use case?", expanded=True):
+        with st.expander("How does RAG (Retrieval-Augmented Generation) work with MongoDB in this project?", expanded=True):
+            st.markdown("""
+            **RAG Architecture:**
+            1. **Vector Embedding:** Document chunks (curriculum roadmaps, job descriptions, project architectures) are converted into dense vector embeddings.
+            2. **MongoDB Vector Storage:** Stored in the `knowledge_vectors` collection alongside rich metadata.
+            3. **Semantic Retrieval:** User queries compute embedding vectors and perform cosine similarity search against stored MongoDB vectors to retrieve the most relevant knowledge chunks.
+            4. **Augmented Prompt:** Candidate profile, job requirements, and retrieved knowledge chunks are injected into Google Gemini LLM to generate grounded career advice and tailored portfolio projects.
+            """)
+
+        with st.expander("Why a document database instead of a relational database for this use case?"):
             st.markdown("""
             **Technical Justification:**
             1. **Natural Array Representation:** Candidate and job skills exist as multi-valued attributes (`["Python", "SQL"]`). Relational databases require separate bridge/junction tables with foreign keys, leading to expensive multi-table joins.
-            2. **Embedded Complex Data:** Resumes contain variable numbers of nested projects, certifications, and dynamic fields that fit hierarchical JSON/BSON documents cleanly without rigid schema migrations.
+            2. **Embedded Complex Data & Vectors:** Resumes contain variable numbers of nested projects, certifications, and high-dimensional vector embeddings that fit hierarchical JSON/BSON documents cleanly without rigid schema migrations.
             3. **High-Performance Aggregations:** `$unwind` and `$group` provide native, in-memory pipeline transformations directly on array elements.
             """)
 
@@ -866,11 +1037,6 @@ db.users.update_one(
             - **`$addToSet`**: Adds the item **only if it does not already exist** in the target array, enforcing set uniqueness.
             """)
 
-        with st.expander("What role does $lookup perform in document architectures?"):
-            st.markdown("""
-            `$lookup` provides left-outer equality join capabilities between collections. In this project, it joins the `analyses` collection with the `jobs` collection on `job_id` to aggregate company information and compute role-level applicant fit metrics.
-            """)
-
 
 # -----------------------------------------------------------------------------
 # MINIMALIST FOOTER
@@ -878,6 +1044,6 @@ db.users.update_one(
 st.markdown("---")
 st.markdown("""
 <div style="text-align: center; color: #94A3B8; font-size: 0.8rem; padding-bottom: 1rem;">
-    Skill Gap Analyzer &nbsp;•&nbsp; Talent Competency Benchmarking Platform
+    Skill Gap Analyzer &nbsp;•&nbsp; RAG-Powered Competency Intelligence Platform
 </div>
 """, unsafe_allow_html=True)
