@@ -1232,19 +1232,36 @@ db.users.update_one(
 
     with sub3:
         st.markdown("<p style='font-size:0.9rem; font-weight:700; color:#0F172A;'>Collection Browser</p>", unsafe_allow_html=True)
-        db = get_database()
         coll_target = st.selectbox("Collection:", ["users", "jobs", "resumes", "analyses", "skills", "recommendations", "knowledge_vectors"])
-        raw_docs = list(db[coll_target].find().limit(5))
-        st.caption(f"Showing first 5 of {db[coll_target].count_documents({})} documents:")
-        for d in raw_docs:
-            d["_id"] = str(d["_id"])
-            if "created_at" in d:
-                d["created_at"] = str(d["created_at"])
-            if "uploaded_at" in d:
-                d["uploaded_at"] = str(d["uploaded_at"])
-            if "embedding" in d and isinstance(d["embedding"], list):
-                d["embedding"] = f"[{len(d['embedding'])} dense vector dimensions]"
-            st.json(d)
+        try:
+            db = get_database()
+            raw_docs = list(db[coll_target].find().limit(5))
+            count_docs = db[coll_target].count_documents({})
+            st.caption(f"Showing first 5 of {count_docs} documents from live MongoDB:")
+            for d in raw_docs:
+                d["_id"] = str(d["_id"])
+                if "created_at" in d:
+                    d["created_at"] = str(d["created_at"])
+                if "uploaded_at" in d:
+                    d["uploaded_at"] = str(d["uploaded_at"])
+                if "embedding" in d and isinstance(d["embedding"], list):
+                    d["embedding"] = f"[{len(d['embedding'])} dense vector dimensions]"
+                st.json(d)
+        except Exception:
+            from database import seed_data
+            sample_map = {
+                "users": seed_data.USERS_DATA,
+                "jobs": seed_data.JOBS_DATA,
+                "resumes": seed_data.RESUMES_DATA,
+                "analyses": seed_data.ANALYSES_DATA,
+                "skills": seed_data.SKILLS_DATA,
+                "recommendations": seed_data.RECOMMENDATIONS_DATA,
+                "knowledge_vectors": [{"vector_id": 1, "title": "Sample Vector", "category": "learning_roadmap"}]
+            }
+            sample_docs = sample_map.get(coll_target, [])
+            st.caption(f"Demo Mode: Showing {len(sample_docs[:5])} sample records for `{coll_target}` (Database offline):")
+            for d in sample_docs[:5]:
+                st.json(d)
 
     with sub4:
         st.markdown("<p style='font-size:0.9rem; font-weight:700; color:#0F172A;'>Viva & Technical Examination Reference</p>", unsafe_allow_html=True)

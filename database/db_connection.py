@@ -71,6 +71,7 @@ def _get_config_value(key: str, fallback: str) -> str:
 def get_client(uri: Optional[str] = None) -> MongoClient:
     """
     Returns a cached PyMongo MongoClient instance.
+    Uses 2.5s timeouts so Streamlit Community Cloud page never hangs on startup.
     """
     global _client
     if _client is None:
@@ -78,10 +79,10 @@ def get_client(uri: Optional[str] = None) -> MongoClient:
         mongo_uri = sanitize_mongo_uri(raw_uri)
         _client = MongoClient(
             mongo_uri,
-            serverSelectionTimeoutMS=5000,
-            connectTimeoutMS=5000,
-            socketTimeoutMS=5000,
-            maxPoolSize=50
+            serverSelectionTimeoutMS=2500,
+            connectTimeoutMS=2500,
+            socketTimeoutMS=2500,
+            maxPoolSize=25
         )
     return _client
 
