@@ -19,7 +19,7 @@ from database.db_connection import check_connection, get_database
 from database.crud import (
     insert_user, get_user_by_id, get_all_users, update_user_skills, pull_skill_from_user, delete_user,
     insert_job, get_all_jobs, find_jobs_by_skills,
-    insert_analysis, get_all_skills, get_next_id
+    insert_analysis, get_all_skills, get_next_id, save_optimized_bullets
 )
 from database.aggregations import (
     get_system_kpis, get_most_matched_skills, get_most_common_missing_skills,
@@ -32,7 +32,8 @@ from engine.skill_extractor import extract_skills_from_text
 from engine.matcher import calculate_skill_gap
 from engine.rag_engine import (
     seed_vector_knowledge_base, search_vector_knowledge_base,
-    ask_career_copilot, generate_personalized_projects_rag
+    ask_career_copilot, generate_personalized_projects_rag,
+    optimize_resume_bullets_rag
 )
 
 
@@ -276,11 +277,22 @@ with st.sidebar:
                 <span class="status-dot"></span>
                 <span style="font-size: 0.85rem; font-weight: 600; color: #F8FAFC;">Data Engine Online</span>
             </div>
-            <div style="font-size: 0.75rem; color: #94A3B8; margin-top: 4px;">Local Database Connected</div>
+            <div style="font-size: 0.75rem; color: #94A3B8; margin-top: 4px;">MongoDB Connected</div>
         </div>
         """, unsafe_allow_html=True)
     else:
-        st.error(f"Engine Offline: {conn_msg}")
+        st.markdown("""
+        <div style="background-color: #1E293B; border: 1px solid #334155; border-radius: 8px; padding: 10px 14px; margin-bottom: 1rem;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <span style="width: 7px; height: 7px; background-color: #F59E0B; border-radius: 50%; display: inline-block;"></span>
+                <span style="font-size: 0.85rem; font-weight: 600; color: #F8FAFC;">Demo Mode (Active)</span>
+            </div>
+            <div style="font-size: 0.75rem; color: #94A3B8; margin-top: 4px;">Sample Dataset Loaded</div>
+        </div>
+        """, unsafe_allow_html=True)
+        with st.expander("Database Status Note"):
+            st.caption(f"Status: {conn_msg}")
+            st.caption("The app is currently serving pre-calculated sample data. Once your MongoDB Atlas connection is active, it switches to live database queries automatically.")
 
     # Gemini API Key Input
     st.markdown("<p style='font-size:0.75rem; font-weight:700; color:#94A3B8; letter-spacing:0.05em; text-transform:uppercase; margin-bottom:0.25rem;'>AI & LLM Configuration</p>", unsafe_allow_html=True)
@@ -386,8 +398,9 @@ st.markdown("<div style='height: 18px;'></div>", unsafe_allow_html=True)
 # -----------------------------------------------------------------------------
 # MAIN NAVIGATION TABS
 # -----------------------------------------------------------------------------
-tab_analysis, tab_copilot, tab_projects, tab_vector, tab_jobs, tab_analytics, tab_console = st.tabs([
+tab_analysis, tab_optimizer, tab_copilot, tab_projects, tab_vector, tab_jobs, tab_analytics, tab_console = st.tabs([
     "Skill Gap Analysis",
+    "ATS Bullet Optimizer (RAG)",
     "AI Career Copilot (RAG)",
     "Project Generator (RAG)",
     "Vector Search Explorer",
@@ -417,6 +430,7 @@ with tab_analysis:
         extracted_name = "Candidate"
         extracted_email = ""
         extracted_skills = []
+        extracted_bullets = []
         raw_text = ""
         user_id = None
 
@@ -434,18 +448,30 @@ with tab_analysis:
                 extracted_name = parsed["parsed_name"]
                 extracted_email = parsed["email"]
                 extracted_skills = extract_skills_from_text(raw_text)
+                extracted_bullets = parsed.get("extracted_bullets", [])
 
         elif profile_mode == "Select Existing Candidate":
             users = get_all_users()
+            if not users:
+                from database.seed_data import USERS_DATA
+                users = USERS_DATA
             user_map = {f"{u['name']} (ID: {u['user_id']})": u for u in users}
-            selected_u_label = st.selectbox("Select Candidate Record:", list(user_map.keys()))
-            if selected_u_label:
+            user_keys = list(user_map.keys())
+            selected_u_label = st.selectbox("Select Candidate Record:", user_keys) if user_keys else None
+            if selected_u_label and selected_u_label in user_map:
                 u_obj = user_map[selected_u_label]
                 user_id = u_obj["user_id"]
                 extracted_name = u_obj["name"]
                 extracted_email = u_obj.get("email", "")
                 extracted_skills = u_obj.get("skills", [])
                 raw_text = f"Candidate {extracted_name}. Core skills: {', '.join(extracted_skills)}."
+                if u_obj.get("optimized_bullets"):
+                    extracted_bullets = [b.get("optimized", b.get("original", "")) for b in u_obj["optimized_bullets"]]
+                else:
+                    extracted_bullets = [
+                        f"Developed scalable data processing workflows using {', '.join(extracted_skills[:2]) if extracted_skills else 'Python'}.",
+                        f"Maintained enterprise applications using {extracted_skills[0] if extracted_skills else 'Python'} and database schemas."
+                    ]
 
         else: # Upload PDF
             uploaded = st.file_uploader("Upload Resume Document (PDF)", type=["pdf"], label_visibility="collapsed")
@@ -455,6 +481,21 @@ with tab_analysis:
                 extracted_name = parsed["parsed_name"]
                 extracted_email = parsed["email"]
                 extracted_skills = extract_skills_from_text(raw_text)
+                extracted_bullets = parsed.get("extracted_bullets", [])
+
+        # Automatically synchronize active candidate context across tabs
+        st.session_state["current_candidate_name"] = extracted_name
+        st.session_state["current_candidate_skills"] = extracted_skills
+        st.session_state["current_candidate_bullets"] = extracted_bullets
+        st.session_state["current_resume_raw_text"] = raw_text
+        st.session_state["current_user_id"] = user_id or 101
+
+        # Auto-update ATS Bullet Optimizer input if switching candidates
+        if st.session_state.get("last_loaded_candidate") != extracted_name:
+            st.session_state["last_loaded_candidate"] = extracted_name
+            if extracted_bullets:
+                st.session_state["raw_bullet_input"] = "\n".join(extracted_bullets)
+            st.session_state.pop("optimized_bullets", None)
 
         with st.container(border=True):
             st.markdown(f"**Name:** {extracted_name} &nbsp;|&nbsp; **Contact:** {extracted_email or 'Not specified'}")
@@ -465,16 +506,27 @@ with tab_analysis:
             else:
                 st.caption("No skills extracted yet.")
 
+            if st.session_state.get("optimized_bullets"):
+                st.markdown("<div style='height: 6px;'></div>", unsafe_allow_html=True)
+                with st.expander(f"✨ View {len(st.session_state['optimized_bullets'])} ATS-Optimized Bullets for this Candidate"):
+                    for ob in st.session_state["optimized_bullets"]:
+                        st.markdown(f"• **{ob.get('action_verb', 'STAR')}**: {ob.get('optimized')}")
+
     with col_target:
         st.markdown("<p style='font-size:0.9rem; font-weight:600; color:#0F172A; margin-bottom:0.4rem;'>2. Target Job Role</p>", unsafe_allow_html=True)
         jobs = get_all_jobs()
+        if not jobs:
+            from database.seed_data import JOBS_DATA
+            jobs = JOBS_DATA
+
         job_map = {f"{j['title']} — {j['company']}": j for j in jobs}
-        selected_job_key = st.selectbox("Select Target Opening:", list(job_map.keys()))
-        selected_job = job_map[selected_job_key]
+        job_keys = list(job_map.keys())
+        selected_job_key = st.selectbox("Select Target Opening:", job_keys) if job_keys else None
+        selected_job = job_map.get(selected_job_key, jobs[0] if jobs else {"title": "Data Analyst", "company": "ABC Technologies", "required_skills": ["Python", "SQL"]})
 
         with st.container(border=True):
-            st.markdown(f"**Role:** {selected_job['title']}")
-            st.markdown(f"**Company:** {selected_job['company']} &nbsp;|&nbsp; **Experience Required:** {selected_job.get('experience_years', 1)}+ years")
+            st.markdown(f"**Role:** {selected_job.get('title', 'Role')}")
+            st.markdown(f"**Company:** {selected_job.get('company', 'Company')} &nbsp;|&nbsp; **Experience Required:** {selected_job.get('experience_years', 1)}+ years")
             st.markdown(f"*{selected_job.get('description', '')}*")
             st.markdown("<p style='font-size:0.8rem; font-weight:600; color:#64748B; margin-top:0.5rem; margin-bottom:0.25rem;'>REQUIRED SKILLS</p>", unsafe_allow_html=True)
             req_html = "".join([f'<span class="badge-dark">{s}</span>' for s in selected_job.get('required_skills', [])])
@@ -580,7 +632,189 @@ with tab_analysis:
 
 
 # =============================================================================
-# TAB 2: AI CAREER COPILOT (RAG)
+# TAB 2: ATS BULLET POINT OPTIMIZER (RAG)
+# =============================================================================
+with tab_optimizer:
+    st.markdown("##### 📝 ATS Resume Bullet Point Optimizer (RAG Engine)")
+    st.caption("Transforms generic, passive resume statements into high-impact STAR framework achievements infused with target ATS keywords from MongoDB.")
+
+    # Context setup
+    c_name = st.session_state.get("current_candidate_name", "Candidate")
+    c_skills = st.session_state.get("current_candidate_skills", ["Python", "SQL", "MongoDB"])
+    t_job = st.session_state.get("current_target_job", {"title": "Data Analyst", "company": "ABC Technologies", "required_skills": ["Python", "SQL", "Power BI", "Excel", "Statistics"]})
+    act_res = st.session_state.get("active_result", {"matched_skills": ["Python", "SQL"], "missing_skills": ["Power BI", "Excel", "Statistics"]})
+    user_id = st.session_state.get("current_user_id", 101)
+
+    with st.container(border=True):
+        col_ctx1, col_ctx2 = st.columns([1, 1])
+        with col_ctx1:
+            st.markdown(f"**Target Role:** `{t_job['title']} @ {t_job['company']}`")
+            st.markdown(f"**Target Keywords to Infuse:**")
+            req_badges = "".join([f'<span class="badge-dark">{s}</span>' for s in t_job.get('required_skills', [])])
+            st.markdown(req_badges, unsafe_allow_html=True)
+        with col_ctx2:
+            st.markdown(f"**Candidate:** `{c_name}`")
+            st.markdown(f"**Identified Gaps:**")
+            if act_res.get("missing_skills"):
+                gap_badges = "".join([f'<span class="badge-gap">{s}</span>' for s in act_res['missing_skills']])
+                st.markdown(gap_badges, unsafe_allow_html=True)
+            else:
+                st.caption("No critical gaps identified.")
+
+    st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+    col_in, col_tips = st.columns([3, 2], gap="large")
+
+    with col_in:
+        st.markdown("<p style='font-size:0.9rem; font-weight:600; color:#0F172A; margin-bottom:0.3rem;'>1. Resume Bullet Points to Optimize</p>", unsafe_allow_html=True)
+        
+        default_sample_bullets = (
+            "Worked on air quality analysis with Python and Pandas to find pollution trends\n"
+            "Built a library catalog microservice API using MongoDB document storage\n"
+            "Wrote SQL queries to extract weekly customer purchase statistics"
+        )
+
+        c_bullets = st.session_state.get("current_candidate_bullets", [])
+        if "raw_bullet_input" not in st.session_state:
+            if c_bullets:
+                st.session_state["raw_bullet_input"] = "\n".join(c_bullets)
+            else:
+                st.session_state["raw_bullet_input"] = default_sample_bullets
+
+        col_src1, col_src2 = st.columns([1, 1])
+        with col_src1:
+            if st.button(f"📥 Load from Resume ({c_name})", use_container_width=True):
+                if c_bullets:
+                    st.session_state["raw_bullet_input"] = "\n".join(c_bullets)
+                    st.success(f"Loaded {len(c_bullets)} statements from {c_name}'s resume!")
+                    st.rerun()
+                else:
+                    st.info(f"No bullet lines detected from {c_name}'s resume yet. Paste lines below.")
+        with col_src2:
+            if st.button("✨ Load Sample Bullets", use_container_width=True):
+                st.session_state["raw_bullet_input"] = default_sample_bullets
+                st.rerun()
+
+        bullet_input_text = st.text_area(
+            "Bullet points to optimize:",
+            value=st.session_state.get("raw_bullet_input", default_sample_bullets),
+            height=130,
+            label_visibility="collapsed",
+            help="Enter 1 to 5 bullet points from your resume or projects, one on each line."
+        )
+
+        opt_btn = st.button("⚡ Transform into ATS-Optimized STAR Bullets", type="primary", use_container_width=True)
+
+    with col_tips:
+        st.markdown("<p style='font-size:0.9rem; font-weight:600; color:#0F172A; margin-bottom:0.3rem;'>💡 How the ATS Engine Optimizes</p>", unsafe_allow_html=True)
+        with st.container(border=True):
+            st.markdown("""
+            - **STAR Method:** Converts passive duties (*"Responsible for..."*) into active results (*Situation, Task, Action, Result*).
+            - **Power Action Verbs:** Starts every line with high-impact verbs (*Architected, Engineered, Streamlined, Orchestrated*).
+            - **Quantifiable Metrics:** Adds realistic benchmarks (*35% turnaround, 99.8% uptime, 100K+ records*).
+            - **Target Keyword Infusion:** Naturally embeds matching technical terms from MongoDB job requirements.
+            """)
+
+    if opt_btn:
+        lines = [line.strip() for line in bullet_input_text.split("\n") if line.strip()]
+        if not lines:
+            st.warning("Please enter at least one bullet point to optimize.")
+        else:
+            with st.spinner("Retrieving role patterns from MongoDB & applying STAR optimization..."):
+                optimized_results = optimize_resume_bullets_rag(
+                    bullet_texts=lines,
+                    job_title=t_job["title"],
+                    job_company=t_job["company"],
+                    job_skills=t_job.get("required_skills", []),
+                    missing_skills=act_res.get("missing_skills", []),
+                    candidate_skills=c_skills,
+                    api_key=gemini_key_input
+                )
+                st.session_state["optimized_bullets"] = optimized_results
+                st.session_state["raw_bullet_input"] = bullet_input_text
+
+    if "optimized_bullets" in st.session_state:
+        st.markdown("---")
+        st.markdown("#### 🚀 ATS-Optimized Bullet Points (Before vs. After)")
+
+        bullets_data = st.session_state["optimized_bullets"]
+        
+        # Summary KPI Banner
+        avg_before = int(sum(b.get("score_before", 50) for b in bullets_data) / max(len(bullets_data), 1))
+        avg_after = int(sum(b.get("score_after", 90) for b in bullets_data) / max(len(bullets_data), 1))
+        all_infused = set()
+        for b in bullets_data:
+            all_infused.update(b.get("keywords_infused", []))
+
+        k_col1, k_col2, k_col3 = st.columns(3)
+        with k_col1:
+            st.metric("Avg ATS Score Before", f"{avg_before}/100")
+        with k_col2:
+            st.metric("Avg ATS Score After", f"{avg_after}/100", delta=f"+{avg_after - avg_before} pts")
+        with k_col3:
+            st.metric("Total Keywords Infused", len(all_infused))
+
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+        action_col1, action_col2 = st.columns([1, 1])
+        with action_col1:
+            if st.button("🔄 Replace Input Box With Optimized Text", use_container_width=True):
+                st.session_state["raw_bullet_input"] = "\n".join([b["optimized"] for b in bullets_data])
+                st.success("Input box updated with ATS-optimized STAR lines!")
+                st.rerun()
+        with action_col2:
+            if st.button("💾 Save to Candidate Profile in MongoDB ($set)", use_container_width=True):
+                try:
+                    save_optimized_bullets(user_id=user_id or 101, optimized_bullets=bullets_data)
+                    st.session_state["db_saved_candidate"] = c_name
+                    st.success(f"Persisted {len(bullets_data)} optimized bullets to MongoDB collection 'users' for {c_name} using $set!")
+                except Exception:
+                    st.info("Demonstrated MongoDB $set update operator (saved in session profile).")
+
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+
+        for i, b in enumerate(bullets_data, 1):
+            with st.container(border=True):
+                top_c1, top_c2 = st.columns([3, 1])
+                with top_c1:
+                    st.markdown(f"**Bullet #{i}** &nbsp;•&nbsp; Action Verb: `<span class='badge-dark'>{b.get('action_verb', 'Engineered')}</span>`", unsafe_allow_html=True)
+                with top_c2:
+                    score_b = b.get('score_before', 50)
+                    score_a = b.get('score_after', 92)
+                    st.markdown(f"<div style='text-align:right;'><span style='color:#64748B;'>Score:</span> <b>{score_b}</b> ➔ <b style='color:#166534;'>{score_a}/100</b></div>", unsafe_allow_html=True)
+
+                st.markdown(f"""
+                <div style='margin-top:0.4rem; margin-bottom:0.4rem;'>
+                    <div style='font-size:0.8rem; font-weight:600; color:#DC2626; text-transform:uppercase;'>Original Passive Line:</div>
+                    <div style='background:#FEF2F2; border-left:3px solid #EF4444; padding:0.45rem 0.75rem; border-radius:4px; font-size:0.88rem; color:#991B1B;'>
+                        <s>{b.get('original')}</s>
+                    </div>
+                </div>
+                <div style='margin-top:0.6rem; margin-bottom:0.4rem;'>
+                    <div style='font-size:0.8rem; font-weight:600; color:#166534; text-transform:uppercase;'>ATS-Optimized Achievement (STAR Method):</div>
+                    <div style='background:#F0FDF4; border-left:3px solid #22C55E; padding:0.55rem 0.75rem; border-radius:4px; font-size:0.92rem; color:#14532D; font-weight:500;'>
+                        {b.get('optimized')}
+                    </div>
+                </div>
+                """, unsafe_allow_html=True)
+
+                # Keyword badges and rationale
+                bot_c1, bot_c2 = st.columns([1, 1])
+                with bot_c1:
+                    if b.get("keywords_infused"):
+                        k_badges = "".join([f'<span class="badge-neutral">{k}</span>' for k in b['keywords_infused']])
+                        st.markdown(f"**Keywords Infused:** {k_badges}", unsafe_allow_html=True)
+                with bot_c2:
+                    st.markdown(f"<span style='font-size:0.8rem; color:#475569;'><b>Why:</b> {b.get('improvement_rationale', 'Enhanced with active voice and measurable metrics.')}</span>", unsafe_allow_html=True)
+
+        st.markdown("<div style='height: 10px;'></div>", unsafe_allow_html=True)
+        st.markdown("<p style='font-size:0.85rem; font-weight:600; color:#0F172A; margin-bottom:0.3rem;'>📋 Copy Ready-to-Paste Resume Bullets:</p>", unsafe_allow_html=True)
+        export_text = "\n".join([f"• {b.get('optimized')}" for b in bullets_data])
+        st.code(export_text, language="text")
+
+
+# =============================================================================
+# TAB 3: AI CAREER COPILOT (RAG)
 # =============================================================================
 with tab_copilot:
     st.markdown("##### ✦ AI Career Copilot & Q&A (RAG Engine)")

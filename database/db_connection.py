@@ -4,6 +4,8 @@ Handles client lifecycle, connection pooling, and collection indexing.
 """
 
 import os
+import re
+import urllib.parse
 from typing import Optional, Tuple, Dict, Any
 from pymongo import MongoClient, ASCENDING, TEXT
 from pymongo.database import Database
@@ -19,17 +21,65 @@ _client: Optional[MongoClient] = None
 _db: Optional[Database] = None
 
 
+def sanitize_mongo_uri(uri: str) -> str:
+    """
+    Sanitizes MongoDB URI:
+    1. Removes accidental '<' and '>' brackets from username/password.
+    2. URL-encodes (RFC 3986) username and password so special characters
+       like '@', '#', '$' don't break the connection.
+    """
+    if not uri or "://" not in uri:
+        return uri
+
+    # Match protocol://[credentials@]host/path
+    pattern = r"^(mongodb(?:\+srv)?:\/\/)(.*):(.*)@([^@]+)$"
+    match = re.match(pattern, uri.strip())
+    if not match:
+        return uri.strip()
+
+    protocol, raw_user, raw_pwd, host_and_params = match.groups()
+
+    # Strip accidental angle brackets: <user> -> user
+    clean_user = raw_user.strip("<>").strip()
+    clean_pwd = raw_pwd.strip("<>").strip()
+
+    # Encode according to RFC 3986 as required by MongoDB
+    safe_user = urllib.parse.quote_plus(urllib.parse.unquote_plus(clean_user))
+    safe_pwd = urllib.parse.quote_plus(urllib.parse.unquote_plus(clean_pwd))
+
+    return f"{protocol}{safe_user}:{safe_pwd}@{host_and_params}"
+
+
+def _get_config_value(key: str, fallback: str) -> str:
+    """
+    Retrieves configuration value checking:
+    1. Streamlit secrets (for Streamlit Community Cloud)
+    2. OS Environment variables
+    3. Provided default fallback
+    """
+    try:
+        import streamlit as st
+        if hasattr(st, "secrets") and key in st.secrets:
+            val = str(st.secrets[key]).strip()
+            if val:
+                return val
+    except Exception:
+        pass
+    return os.getenv(key, fallback).strip()
+
+
 def get_client(uri: Optional[str] = None) -> MongoClient:
     """
     Returns a cached PyMongo MongoClient instance.
     """
     global _client
     if _client is None:
-        mongo_uri = uri or os.getenv("MONGODB_URI", DEFAULT_URI)
+        raw_uri = uri or _get_config_value("MONGODB_URI", DEFAULT_URI)
+        mongo_uri = sanitize_mongo_uri(raw_uri)
         _client = MongoClient(
             mongo_uri,
-            serverSelectionTimeoutMS=4000,
-            connectTimeoutMS=4000,
+            serverSelectionTimeoutMS=5000,
+            connectTimeoutMS=5000,
             socketTimeoutMS=5000,
             maxPoolSize=50
         )
@@ -43,7 +93,7 @@ def get_database(db_name: Optional[str] = None, uri: Optional[str] = None) -> Da
     global _db
     if _db is None:
         client = get_client(uri)
-        target_db = db_name or os.getenv("DATABASE_NAME", DEFAULT_DB_NAME)
+        target_db = db_name or _get_config_value("DATABASE_NAME", DEFAULT_DB_NAME)
         _db = client[target_db]
     return _db
 

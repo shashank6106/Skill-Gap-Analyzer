@@ -1,32 +1,75 @@
-# 🎯 Skill Gap Analyzer using MongoDB & PyMongo
+# ✦ Skill Gap Analyzer & Career Intelligence Platform (with RAG & MongoDB)
 
-A full-stack, NoSQL-centric application built to analyze resumes against job descriptions, calculate skill gaps, recommend priority learning roadmaps, and perform real-time market analytics using **MongoDB**, **PyMongo**, and **Python**.
+A full-stack enterprise competency platform powered by **Python**, **PyMongo**, **MongoDB**, **Google Gemini**, and a **Retrieval-Augmented Generation (RAG)** vector engine.
+
+Analyzes PDF resumes against job descriptions, calculates direct and semantic skill gaps, retrieves relevant curriculum modules from MongoDB vector stores, and generates hyper-personalized career advice and portfolio project proposals.
 
 ---
 
-## 🏗️ Technology Stack
+## 🏛️ Technology Stack
 
 ```
 Python
    │
-   ├── PyMongo ───────────→ MongoDB (Core Database: CRUD, Indexing, Aggregations)
+   ├── PyMongo ───────────→ MongoDB (Core NoSQL Store: CRUD, Aggregations & Vector Embeddings)
+   │
+   ├── RAG Engine ────────→ Semantic vector retrieval from MongoDB + Google Gemini LLM
    │
    ├── PyPDF ─────────────→ Resume extraction (Text, Metadata, Contact Info)
    │
-   ├── NLP & Regex ───────→ Taxonomy-based Skill & Project extraction
+   ├── NLP & Regex ───────→ Taxonomy-based Skill extraction
    │
    ├── Scikit-learn ──────→ TF-IDF Semantic Cosine Similarity
    │
-   └── Streamlit + Plotly → Interactive Dashboard & Viva Demo Lab
+   └── Streamlit + Plotly → Minimalist Light & Dark Enterprise Web UI
 ```
 
 ---
 
-## 🗄️ MongoDB Database Architecture
+## 🚀 Key Features
+
+### 1. 📄 Skill Gap Analysis & Benchmarking
+- Automated parsing of PDF resumes using `PyPDF`.
+- Multi-dimensional scoring: **Direct Skill Overlap** (70%) + **Scikit-Learn TF-IDF Cosine Similarity** (30%).
+- Real-time persistence of evaluation records to MongoDB collection: `analyses`.
+- Side-by-side competency badges (Matched vs Missing Gaps) with dynamic priority roadmaps.
+
+### 2. 📝 ATS Resume Bullet Point Optimizer (RAG Engine)
+- Rewrites passive, weak resume statements into high-impact STAR framework achievements (*Situation, Task, Action, Result*).
+- Naturally infuses target employer keywords retrieved from the MongoDB `jobs` collection.
+- Displays an ATS Impact Score Before vs After (e.g., `48/100 ➔ 93/100`).
+- Provides one-click persistence of optimized bullets to candidate profiles in MongoDB using the `$set` operator.
+
+### 3. ✦ AI Career Copilot (RAG Engine)
+- Contextual career guidance powered by **Google Gemini** (`gemini-2.5-flash`).
+- Grounded in real-time knowledge retrieved from MongoDB collection: `knowledge_vectors`.
+- Helps candidates prepare for technical interviews, design 3-week study plans, and articulate skill gaps.
+
+### 3. 🛠️ Personalized Project Generator (RAG)
+- Generates 3 tailored, resume-worthy project proposals designed to prove missing skills.
+- Combines the candidate's *existing strengths* with their *target gaps* so projects are practical and realistic.
+- Provides high-level architecture flows and ready-to-use resume bullet points.
+
+### 4. 🧬 MongoDB Vector Search Explorer
+- Live semantic search across jobs, curriculum modules, and project design patterns stored in MongoDB.
+- Cosine similarity calculation over dense document vector embeddings.
+
+### 5. 📊 Market Intelligence & Aggregation Analytics
+- Live metrics directly aggregated via PyMongo pipelines:
+  - Top Demanded Skills in Job Market (`$unwind` + `$group`).
+  - Most Common Skill Gaps across candidate pool.
+  - Candidate Supply vs Employer Demand Gap analysis.
+  - Role Compatibility Leaderboard (`$lookup` join between `analyses` and `jobs`).
+
+### 6. ⚡ Data Engine & Query Console (Viva Demonstration Lab)
+- Interactive playground to execute live CRUD operations (`insert_one`, `find_one`, array `$addToSet` deduplication, `$pull`, `delete_one`).
+- Raw aggregation pipeline inspector and BSON document browser.
+
+---
+
+## 🗄️ MongoDB Collections Architecture
 
 **Database Name:** `skill_gap_analyzer`
-
-### Collections Overview:
 
 | Collection | Description | Key Operators & Indexes |
 | :--- | :--- | :--- |
@@ -36,132 +79,37 @@ Python
 | `skills` | Master catalog of canonical technical skills | Unique index on skill `name`, index on `category` |
 | `analyses` | Evaluated skill gaps, scores, and matched skills | Index on `user_id`, `job_id`, `match_score` |
 | `recommendations`| Targeted learning roadmaps & course links | Unique index on `skill` |
+| `knowledge_vectors`| Vector embeddings of curriculum, jobs & project patterns | Unique index on `doc_id`, index on `category` |
 
 ---
 
-## 🚀 Quick Start Guide
+## ⚡ Quick Start Guide
 
-### 1. Prerequisites
-- Python 3.10+
-- MongoDB Server running locally (`mongodb://localhost:27017/`) or MongoDB Atlas URI
-
-### 2. Install Dependencies
+### 1. Install Dependencies
 ```bash
 pip install -r requirements.txt
 ```
 
-### 3. Initialize & Seed MongoDB
-Populate the database with realistic initial users, jobs, skills, recommendations, and sample analyses:
+### 2. Seed Database & Vector Knowledge Base
 ```bash
 python database/seed_data.py
+python -c "from engine.rag_engine import seed_vector_knowledge_base; print('Seeded vector embeddings:', seed_vector_knowledge_base(True))"
 ```
 
-### 4. Run the Streamlit Web Application
+### 3. Run Web Dashboard
 ```bash
 streamlit run app.py
 ```
-Open your browser at `http://localhost:8501`.
+Open **`http://localhost:8501`** in your browser.
+
+*(Optional: Enter your free Google Gemini API key in the sidebar for live conversational generation; works with high-quality local RAG synthesis if left blank!)*
 
 ---
 
-## 🧪 Terminal Viva Demonstration (`cli_demo.py`)
-
-For instant terminal demonstrations during your lab or viva exam, run:
-```bash
-python cli_demo.py
-```
-This script steps through:
-1. Live MongoDB connection verification
-2. PyMongo `insert_one()`
-3. PyMongo `find_one()`
-4. Array operator `$addToSet` (demonstrating deduplication)
-5. Array operator `$pull`
-6. Query operators `$in`, `$all`, `$gte`, `$lte`
-7. Aggregation Pipeline 1: Most Demanded Job Skills (`$unwind` + `$group` + `$sort`)
-8. Aggregation Pipeline 2: Most Common Missing Skills (`$unwind` + `$group`)
-9. Aggregation Pipeline 3: Job Leaderboard with `$lookup` (Foreign Join)
-10. PyMongo `delete_one()` cleanup
-
----
-
-## 🌟 Application Features
-
-### Tab 1: 📄 Resume Analyzer & Skill Gap Report
-- Upload any candidate resume (PDF) or pick from pre-loaded samples (`shashank_resume.pdf`, `ananya_resume.pdf`, `rahul_resume.pdf`).
-- Automated extraction of contact details, education, and technical skills using `PyPDF` and NLP taxonomy matching.
-- Select target job opening directly from MongoDB.
-- One-click analysis calculating:
-  - **Direct Skill Overlap:** Exact matched skills vs missing skills.
-  - **Scikit-Learn TF-IDF Cosine Similarity:** Semantic comparison between resume text and job description.
-  - **Hybrid Match Score:** Weighted combination (70% direct skills + 30% semantic text).
-- Document automatically saved to MongoDB `analyses` collection via `insert_analysis()`.
-- Interactive Match Score Gauge, Matched/Missing skill badges, and targeted course recommendations loaded from MongoDB `recommendations`.
-
-### Tab 2: 💼 Job Market & Requirement Management
-- Filter job openings using MongoDB array operators:
-  - `$in`: Jobs requiring ANY selected skill.
-  - `$all`: Jobs requiring ALL selected skills.
-- Add new job openings live into MongoDB using `jobs.insert_one()`.
-
-### Tab 3: 📊 MongoDB Aggregation Analytics Dashboard
-- Live metrics directly aggregated via PyMongo:
-  - Total Users, Resumes, Jobs, Analyses, and Average Match Score.
-  - Top Demanded Skills in Job Market (`$unwind` + `$group`).
-  - Most Common Skill Gaps across candidate pool.
-  - Candidate Supply vs Employer Demand Gap analysis.
-  - Job Match Performance Leaderboard (`$lookup` join between `analyses` and `jobs`).
-- "View Pipeline" expanders showing the exact PyMongo aggregation code behind every chart.
-
-### Tab 4: 🔌 PyMongo & NoSQL Viva Demo Lab
-- **Live CRUD Playground:** Execute `insert_one()`, `find_one()`, `update_one()` with `$addToSet`, `$pull`, and `delete_one()`.
-- **Pipeline Inspector:** Execute any aggregation pipeline live and view JSON definition and table results.
-- **Collection Inspector:** View raw BSON/JSON documents across any of the 6 collections.
-- **Viva Q&A Reference:** Instant answers to common NoSQL exam questions.
-
----
-
-## 📂 Project Directory Structure
-
-```
-Skill Gap Analyzer/
-│
-├── database/
-│   ├── __init__.py           # Package exports
-│   ├── db_connection.py      # PyMongo client, connection test, index setup
-│   ├── crud.py               # Complete CRUD methods ($addToSet, $pull, $in, $gte, etc.)
-│   ├── aggregations.py       # MongoDB Aggregation pipelines ($unwind, $group, $lookup)
-│   └── seed_data.py          # Seeder script for initial data
-│
-├── engine/
-│   ├── __init__.py
-│   ├── resume_parser.py      # PyPDF text and metadata extractor
-│   ├── skill_extractor.py    # NLP taxonomy & regex skill extractor
-│   └── matcher.py            # Overlap calculation, TF-IDF cosine similarity, recommendations
-│
-├── sample_resumes/           # Ready-to-upload PDF resumes for testing
-│   ├── shashank_resume.pdf
-│   ├── ananya_resume.pdf
-│   └── rahul_resume.pdf
-│
-├── utils/
-│   ├── __init__.py
-│   └── pdf_generator.py      # Programmatic PDF generator
-│
-├── app.py                    # Complete Streamlit interactive web dashboard
-├── cli_demo.py               # Standalone terminal demo for quick viva presentation
-├── requirements.txt          # Python library dependencies
-├── .env.example              # Environment variables template
-├── .env                      # Local MongoDB connection configuration
-├── README.md                 # Project documentation
-└── MONGODB_VIVA_GUIDE.md     # Detailed MongoDB NoSQL viva Q&A and pipeline guide
-```
-
----
-
-## 🎓 For Academic / Evaluation Submission
+## 🎓 Academic Viva & Technical Presentation
 
 Read [MONGODB_VIVA_GUIDE.md](file:///MONGODB_VIVA_GUIDE.md) for full explanations of:
-1. Why MongoDB fits unstructured resume/skill data better than SQL.
-2. The exact mechanics of `$unwind`, `$group`, `$sort`, and `$lookup`.
-3. The vital difference between `$push` and `$addToSet`.
-4. Index types used: Single field, Multikey (arrays), Compound, and Full-Text search.
+1. Why MongoDB fits unstructured resume and vector embedding data better than SQL.
+2. How the RAG pipeline retrieves vector chunks from MongoDB and augments Gemini LLM generation.
+3. The exact mechanics of `$unwind`, `$group`, `$sort`, and `$lookup`.
+4. Difference between array operators `$push` and `$addToSet`.

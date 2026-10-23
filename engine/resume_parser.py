@@ -85,6 +85,55 @@ def extract_contact_info(text: str) -> Dict[str, str]:
     }
 
 
+def extract_experience_and_project_bullets(text: str) -> list:
+    """
+    Extracts bullet lines, project achievements, and experience statements from resume text.
+    Handles numbered lists (1., 2.), bullet points (•, -, *), and lines under Projects/Experience sections.
+    """
+    if not text:
+        return []
+
+    lines = text.split("\n")
+    bullets = []
+    in_section = False
+
+    # 1. First pass: look inside Project / Experience sections
+    for line in lines:
+        l = line.strip()
+        if not l:
+            continue
+        lower_l = l.lower()
+        if any(lower_l.startswith(h) or lower_l == h for h in ["project", "projects", "experience", "work experience", "internship", "internships", "employment"]):
+            in_section = True
+            continue
+        if any(lower_l.startswith(h) or lower_l == h for h in ["education", "technical skill", "technical skills", "skills", "certification", "certifications", "awards", "contact", "references"]):
+            in_section = False
+            continue
+        if in_section:
+            cleaned = re.sub(r"^(\d+[\.\)]|[\-\*•\u2022\u25cf\u25aa\u25b6])\s*", "", l).strip()
+            if cleaned and len(cleaned) > 15:
+                bullets.append(cleaned)
+
+    # 2. Second pass fallback if nothing found: look for lines starting with bullet symbols or numbers
+    if not bullets:
+        for line in lines:
+            l = line.strip()
+            if re.match(r"^(\d+[\.\)]|[\-\*•\u2022\u25cf\u25aa\u25b6])\s*", l):
+                cleaned = re.sub(r"^(\d+[\.\)]|[\-\*•\u2022\u25cf\u25aa\u25b6])\s*", "", l).strip()
+                if cleaned and len(cleaned) > 20 and not any(k in cleaned.lower() for k in ["b.tech", "b.e", "b.sc", "university", "college", "cgpa"]):
+                    bullets.append(cleaned)
+
+    # 3. Third pass fallback: lines with action words
+    if not bullets:
+        action_starters = ["built", "developed", "created", "implemented", "designed", "analyzed", "worked", "managed", "led", "engineered", "assisted", "handled", "conducted", "automated"]
+        for line in lines:
+            l = line.strip()
+            if len(l) > 25 and any(l.lower().startswith(a) for a in action_starters):
+                bullets.append(l)
+
+    return bullets[:5]
+
+
 def parse_resume_content(pdf_source: Union[str, bytes, BinaryIO], filename: str = "uploaded_resume.pdf") -> Dict[str, Any]:
     """
     High-level resume parser orchestrator.
@@ -93,6 +142,7 @@ def parse_resume_content(pdf_source: Union[str, bytes, BinaryIO], filename: str 
     raw_text = extract_text_from_pdf(pdf_source)
     name = extract_candidate_name(raw_text)
     contact = extract_contact_info(raw_text)
+    bullets = extract_experience_and_project_bullets(raw_text)
 
     return {
         "filename": filename,
@@ -100,5 +150,6 @@ def parse_resume_content(pdf_source: Union[str, bytes, BinaryIO], filename: str 
         "email": contact["email"],
         "phone": contact["phone"],
         "degree": contact["degree"],
-        "raw_text": raw_text
+        "raw_text": raw_text,
+        "extracted_bullets": bullets
     }

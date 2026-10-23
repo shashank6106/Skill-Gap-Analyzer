@@ -58,8 +58,11 @@ def get_all_users() -> List[Dict[str, Any]]:
     """
     Demonstrates: find() with sort on integer key.
     """
-    db = get_database()
-    return list(db["users"].find().sort("user_id", 1))
+    try:
+        db = get_database()
+        return list(db["users"].find().sort("user_id", 1))
+    except Exception:
+        return []
 
 
 def update_user_skills(user_id: int, new_skill: str) -> UpdateResult:
@@ -109,6 +112,23 @@ def delete_user(user_id: int) -> DeleteResult:
     """
     db = get_database()
     return db["users"].delete_one({"user_id": user_id})
+
+
+def save_optimized_bullets(user_id: int, optimized_bullets: List[Dict[str, Any]]) -> UpdateResult:
+    """
+    Demonstrates: update_one() with $set operator.
+    Saves ATS-optimized resume bullet points to the candidate document in MongoDB.
+    """
+    db = get_database()
+    return db["users"].update_one(
+        {"user_id": user_id},
+        {
+            "$set": {
+                "optimized_bullets": optimized_bullets,
+                "bullets_updated_at": _now()
+            }
+        }
+    )
 
 
 # =====================================================================
@@ -187,8 +207,11 @@ def get_job_by_id(job_id: int) -> Optional[Dict[str, Any]]:
 
 def get_all_jobs() -> List[Dict[str, Any]]:
     """Demonstrates: find() on jobs collection."""
-    db = get_database()
-    return list(db["jobs"].find().sort("job_id", 1))
+    try:
+        db = get_database()
+        return list(db["jobs"].find().sort("job_id", 1))
+    except Exception:
+        return []
 
 
 def find_jobs_by_skills(skills: List[str], match_all: bool = False) -> List[Dict[str, Any]]:
@@ -333,8 +356,11 @@ def delete_analyses_many(filter_criteria: Dict[str, Any]) -> DeleteResult:
 
 def get_all_skills() -> List[Dict[str, Any]]:
     """Returns all canonical skills stored in MongoDB."""
-    db = get_database()
-    return list(db["skills"].find().sort("name", 1))
+    try:
+        db = get_database()
+        return list(db["skills"].find().sort("name", 1))
+    except Exception:
+        return []
 
 
 def get_recommendations_for_skills(missing_skills: List[str]) -> List[Dict[str, Any]]:
