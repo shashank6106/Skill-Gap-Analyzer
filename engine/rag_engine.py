@@ -161,6 +161,34 @@ CURRICULUM_KNOWLEDGE = [
         "title": "Full-Stack Web Development with React & Node.js",
         "skills": ["React", "JavaScript", "Node.js"],
         "content": "Component lifecycle, modern React hooks (useState, useEffect, useMemo), virtual DOM diffing, RESTful API integration, state management with Context/Redux, and responsive layouts."
+    },
+    {
+        "doc_id": "curric_genai",
+        "category": "learning_roadmap",
+        "title": "Generative AI Engineering, RAG & Vector Search",
+        "skills": ["Python", "PyTorch", "NLP", "FastAPI", "MongoDB"],
+        "content": "Architecture of Retrieval-Augmented Generation (RAG) pipelines, dense vector indexing, cosine similarity ranking, prompt evaluation frameworks, and deployment of open-weights transformer models via FastAPI microservices."
+    },
+    {
+        "doc_id": "curric_k8s",
+        "category": "learning_roadmap",
+        "title": "Kubernetes Orchestration & Zero-Downtime Cloud Deployment",
+        "skills": ["Kubernetes", "Docker", "AWS", "CI/CD", "Linux"],
+        "content": "Production container orchestration with Kubernetes: Pods, Deployments, Horizontal Pod Autoscalers (HPA), Ingress controllers, Helm charts, and automated GitHub Actions CI/CD workflows."
+    },
+    {
+        "doc_id": "curric_kafka",
+        "category": "learning_roadmap",
+        "title": "Distributed Streaming & Event-Driven Architecture with Kafka",
+        "skills": ["Kafka", "Apache Spark", "Python", "SQL"],
+        "content": "Message broker internals, topic partitions, consumer group offsets, schema registry, Kafka Streams real-time transformations, and fault-tolerant event ingestion pipelines."
+    },
+    {
+        "doc_id": "curric_spring",
+        "category": "learning_roadmap",
+        "title": "Enterprise Microservices with Java & Spring Boot",
+        "skills": ["Java", "Spring Boot", "PostgreSQL", "Redis", "Docker"],
+        "content": "Building high-throughput banking microservices with Spring Boot 3, Spring Data JPA, distributed in-memory Redis caching, relational transaction isolation, and containerized deployment."
     }
 ]
 
@@ -192,6 +220,20 @@ PROJECT_PATTERNS = [
         "title": "Real-Time Collaborative Task Board with MERN Stack",
         "skills": ["React", "Node.js", "MongoDB", "Git"],
         "content": "Build a responsive Kanban board with drag-and-drop React interface, Node.js WebSocket backend, and MongoDB document persistence with optimistic concurrency control."
+    },
+    {
+        "doc_id": "proj_pat_genai_rag",
+        "category": "project_pattern",
+        "title": "Enterprise Vector Copilot with MongoDB Vector Search & Gemini RAG",
+        "skills": ["Python", "FastAPI", "MongoDB", "NLP", "Docker"],
+        "content": "Architect a full RAG career copilot embedding technical documentation into MongoDB vector collections, executing approximate nearest neighbor retrieval, and streaming contextual completions via FastAPI."
+    },
+    {
+        "doc_id": "proj_pat_streaming",
+        "category": "project_pattern",
+        "title": "High-Throughput Telemetry Pipeline with Kafka & Apache Spark",
+        "skills": ["Apache Spark", "Kafka", "Python", "SQL", "Docker"],
+        "content": "Stream IoT sensor data through Apache Kafka topics, process 50k events/sec using Spark Structured Streaming with sliding window aggregations, and persist anomaly alerts to MongoDB."
     }
 ]
 

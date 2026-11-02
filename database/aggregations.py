@@ -184,15 +184,14 @@ def get_most_demanded_job_skills(limit: int = 10) -> Tuple[List[Dict[str, Any]],
     except Exception:
         pass
 
-    fallback = [
-        {"skill": "Python", "demand_frequency": 4},
-        {"skill": "Docker", "demand_frequency": 4},
-        {"skill": "MongoDB", "demand_frequency": 3},
-        {"skill": "SQL", "demand_frequency": 3},
-        {"skill": "Git", "demand_frequency": 2},
-        {"skill": "AWS", "demand_frequency": 1}
-    ]
-    return fallback[:limit], pipeline
+    from collections import Counter
+    from database.seed_data import JOBS_DATA
+    counter = Counter()
+    for j in JOBS_DATA:
+        for s in j.get("required_skills", []):
+            counter[s] += 1
+    fallback = [{"skill": s, "demand_frequency": c} for s, c in counter.most_common(limit)]
+    return fallback, pipeline
 
 
 def get_job_performance_breakdown() -> Tuple[List[Dict[str, Any]], List[Dict[str, Any]]]:

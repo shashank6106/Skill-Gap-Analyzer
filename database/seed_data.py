@@ -194,6 +194,7 @@ JOBS_DATA = [
         "company": "ABC Technologies",
         "location": "Bengaluru (Hybrid)",
         "experience_years": 1,
+        "domain": "Data & Analytics",
         "description": "Looking for an analytical mindset capable of querying relational datasets, developing Power BI dashboards, and performing statistical exploratory analysis.",
         "required_skills": ["Python", "SQL", "Power BI", "Excel", "Statistics"]
     },
@@ -203,6 +204,7 @@ JOBS_DATA = [
         "company": "Nexus AI Labs",
         "location": "Hyderabad (On-site)",
         "experience_years": 2,
+        "domain": "AI & Machine Learning",
         "description": "Develop and deploy state-of-the-art NLP and ML pipelines. Hands-on experience with PyTorch, Scikit-learn, Docker, and SQL is required.",
         "required_skills": ["Python", "Scikit-learn", "PyTorch", "NLP", "Docker", "SQL"]
     },
@@ -212,6 +214,7 @@ JOBS_DATA = [
         "company": "CloudPeak Software",
         "location": "Pune (Remote)",
         "experience_years": 2,
+        "domain": "Web & Full Stack",
         "description": "Build responsive React web applications backed by Node.js, Express, and MongoDB NoSQL database pipelines.",
         "required_skills": ["JavaScript", "React", "Node.js", "MongoDB", "Git", "Docker"]
     },
@@ -221,6 +224,7 @@ JOBS_DATA = [
         "company": "DataNova Systems",
         "location": "Bengaluru (On-site)",
         "experience_years": 2,
+        "domain": "Cloud & Data Engineering",
         "description": "Architect scalable data pipelines processing structured and semi-structured documents. Heavy use of Python, MongoDB, SQL, and AWS cloud services.",
         "required_skills": ["Python", "SQL", "MongoDB", "AWS", "Apache Spark", "Docker"]
     },
@@ -230,8 +234,99 @@ JOBS_DATA = [
         "company": "FinTech Solutions",
         "location": "Mumbai (Hybrid)",
         "experience_years": 3,
+        "domain": "Backend & Cloud",
         "description": "Engineer robust microservices handling secure financial transactions. Deep knowledge of Python frameworks, PostgreSQL, MongoDB, Docker, and Git.",
         "required_skills": ["Python", "Django", "PostgreSQL", "MongoDB", "Docker", "Git"]
+    },
+    {
+        "job_id": 506,
+        "title": "Generative AI & LLM Engineer",
+        "company": "CognitiveScale AI",
+        "location": "Bengaluru (Hybrid)",
+        "experience_years": 2,
+        "domain": "AI & Machine Learning",
+        "description": "Architect retrieval-augmented generation (RAG) pipelines, semantic vector search systems, and fine-tune open-weights transformer models for enterprise copilots.",
+        "required_skills": ["Python", "PyTorch", "NLP", "FastAPI", "Docker", "MongoDB"]
+    },
+    {
+        "job_id": 507,
+        "title": "DevOps & Cloud Infrastructure Engineer",
+        "company": "InfraCloud Technologies",
+        "location": "Hyderabad (Remote)",
+        "experience_years": 3,
+        "domain": "DevOps & Cloud",
+        "description": "Automate multi-region cloud infrastructure, container orchestration, zero-downtime CI/CD workflows, and infrastructure-as-code using AWS, Docker, Kubernetes, and Linux.",
+        "required_skills": ["AWS", "Docker", "Kubernetes", "Linux", "Git", "CI/CD"]
+    },
+    {
+        "job_id": 508,
+        "title": "Data Scientist (Product & Growth)",
+        "company": "UrbanMetrics Analytics",
+        "location": "Gurugram (Hybrid)",
+        "experience_years": 2,
+        "domain": "Data & Analytics",
+        "description": "Extract actionable behavioral insights from multi-million user telemetry datasets, lead hypothesis testing and A/B test experiments, and deploy predictive retention models.",
+        "required_skills": ["Python", "SQL", "Statistics", "Pandas", "Scikit-learn", "Tableau"]
+    },
+    {
+        "job_id": 509,
+        "title": "Frontend React & TypeScript Developer",
+        "company": "PixelCraft Digital",
+        "location": "Bengaluru (Remote)",
+        "experience_years": 2,
+        "domain": "Web & Full Stack",
+        "description": "Build high-performance, accessible, and responsive user interfaces. Implement modern React 18 hooks, TypeScript type safety, design systems, and REST API integration.",
+        "required_skills": ["JavaScript", "TypeScript", "React", "HTML", "CSS", "Git"]
+    },
+    {
+        "job_id": 510,
+        "title": "Big Data & Streaming Platform Engineer",
+        "company": "StreamPulse Networks",
+        "location": "Pune (Hybrid)",
+        "experience_years": 3,
+        "domain": "Cloud & Data Engineering",
+        "description": "Design and optimize high-throughput streaming and batch analytics platforms processing real-time telemetry events using Apache Spark, Kafka, and distributed data lakes.",
+        "required_skills": ["Apache Spark", "Kafka", "Python", "SQL", "AWS", "Docker"]
+    },
+    {
+        "job_id": 511,
+        "title": "Java Enterprise Backend Architect",
+        "company": "Apex Core Financial",
+        "location": "Hyderabad (On-site)",
+        "experience_years": 4,
+        "domain": "Enterprise Systems",
+        "description": "Develop mission-critical banking backends and high-concurrency event-driven microservices utilizing Java, Spring Boot, distributed Redis caching, and PostgreSQL.",
+        "required_skills": ["Java", "Spring Boot", "PostgreSQL", "Redis", "Docker", "Git"]
+    },
+    {
+        "job_id": 512,
+        "title": "Business Intelligence & Decision Analyst",
+        "company": "GlobalRetail Insights",
+        "location": "Chennai (Hybrid)",
+        "experience_years": 1,
+        "domain": "Data & Analytics",
+        "description": "Transform enterprise supply-chain and sales transaction logs into executive visual dashboards using Power BI, SQL data warehousing, and advanced DAX KPIs.",
+        "required_skills": ["Power BI", "SQL", "Excel", "Statistics", "Tableau"]
+    },
+    {
+        "job_id": 513,
+        "title": "Cybersecurity & Cloud Security Analyst",
+        "company": "CyberGuard Defense",
+        "location": "Mumbai (On-site)",
+        "experience_years": 2,
+        "domain": "DevOps & Cloud",
+        "description": "Perform vulnerability management, cloud configuration audits on AWS, API security assessments, and container compliance scans across production microservice clusters.",
+        "required_skills": ["Linux", "Python", "Docker", "AWS", "Git"]
+    },
+    {
+        "job_id": 514,
+        "title": "Full Stack Python & AI Web Developer",
+        "company": "CodeCraft Technologies",
+        "location": "Bengaluru (Hybrid)",
+        "experience_years": 2,
+        "domain": "Web & Full Stack",
+        "description": "Engineer end-to-end web applications combining asynchronous FastAPI REST backends, MongoDB document storage, and modern responsive React interactive frontends.",
+        "required_skills": ["Python", "FastAPI", "React", "MongoDB", "Docker", "Git"]
     }
 ]
 
@@ -276,7 +371,19 @@ SKILLS_DATA = [
     {"name": "AWS", "category": "DevOps & Cloud", "demand_level": "Very High"},
     {"name": "Git", "category": "DevOps & Cloud", "demand_level": "High"},
     {"name": "Kubernetes", "category": "DevOps & Cloud", "demand_level": "High"},
-    {"name": "Linux", "category": "DevOps & Cloud", "demand_level": "Medium"}
+    {"name": "Linux", "category": "DevOps & Cloud", "demand_level": "Medium"},
+    {"name": "CI/CD", "category": "DevOps & Cloud", "demand_level": "High"},
+
+    # Big Data & Streaming
+    {"name": "Kafka", "category": "Big Data", "demand_level": "High"},
+
+    # Web & Frontend
+    {"name": "HTML", "category": "Web Development", "demand_level": "High"},
+    {"name": "CSS", "category": "Web Development", "demand_level": "High"},
+
+    # Enterprise & Microservices
+    {"name": "Spring Boot", "category": "Backend Development", "demand_level": "High"},
+    {"name": "REST API", "category": "Web & Backend", "demand_level": "High"}
 ]
 
 
@@ -388,6 +495,105 @@ RECOMMENDATIONS_DATA = [
         "estimated_hours": 20,
         "roadmap": "1. Advanced JOINs & Aggregates -> 2. Window functions -> 3. Query planning & EXPLAIN ANALYZE indexing",
         "resource_url": "https://www.postgresql.org/docs/"
+    },
+    {
+        "skill": "FastAPI",
+        "priority": "High",
+        "course_title": "FastAPI - Modern Python Web APIs with Pydantic & Async",
+        "platform": "Udemy / FastAPI Docs",
+        "estimated_hours": 20,
+        "roadmap": "1. Async endpoints & Path params -> 2. Pydantic request validation -> 3. Dependency injection & JWT auth",
+        "resource_url": "https://fastapi.tiangolo.com/tutorial/"
+    },
+    {
+        "skill": "Kubernetes",
+        "priority": "High",
+        "course_title": "Certified Kubernetes Administrator (CKA) Core Curriculum",
+        "platform": "Linux Foundation / KodeKloud",
+        "estimated_hours": 35,
+        "roadmap": "1. Pods, Deployments & Services -> 2. Ingress & ConfigMaps -> 3. Persistent Volumes & Cluster autoscaling",
+        "resource_url": "https://kubernetes.io/docs/tutorials/"
+    },
+    {
+        "skill": "Linux",
+        "priority": "Medium",
+        "course_title": "Linux Administration & Bash Automation Bootcamp",
+        "platform": "Coursera / Red Hat",
+        "estimated_hours": 18,
+        "roadmap": "1. File permissions & Process management -> 2. Bash shell scripting -> 3. Network sockets & Systemd services",
+        "resource_url": "https://linuxjourney.com/"
+    },
+    {
+        "skill": "Git",
+        "priority": "Medium",
+        "course_title": "Git & GitHub Professional Collaboration Workflows",
+        "platform": "GitHub Skills / Coursera",
+        "estimated_hours": 12,
+        "roadmap": "1. Branching & Merge strategies -> 2. Interactive Rebase & Stashing -> 3. Pull requests & CI conflict resolution",
+        "resource_url": "https://git-scm.com/doc"
+    },
+    {
+        "skill": "Tableau",
+        "priority": "Medium",
+        "course_title": "Tableau for Business Intelligence and Data Analysis",
+        "platform": "Tableau Free Training / Coursera",
+        "estimated_hours": 22,
+        "roadmap": "1. Data blending & Joins -> 2. Calculated fields & LOD expressions -> 3. Interactive storytelling dashboards",
+        "resource_url": "https://www.tableau.com/learn/training"
+    },
+    {
+        "skill": "TypeScript",
+        "priority": "High",
+        "course_title": "Understanding TypeScript - 2026 Edition",
+        "platform": "Udemy / TypeScript Docs",
+        "estimated_hours": 20,
+        "roadmap": "1. Static types & Interfaces -> 2. Generics & Utility types -> 3. TS with React & Strict compiler settings",
+        "resource_url": "https://www.typescriptlang.org/docs/"
+    },
+    {
+        "skill": "Kafka",
+        "priority": "High",
+        "course_title": "Apache Kafka Series: Learn Event-Driven Architecture",
+        "platform": "Confluent Developer / Udemy",
+        "estimated_hours": 25,
+        "roadmap": "1. Topics, Partitions & Brokers -> 2. Consumer groups & Offsets -> 3. Kafka Streams & Schema Registry",
+        "resource_url": "https://kafka.apache.org/documentation/"
+    },
+    {
+        "skill": "CI/CD",
+        "priority": "High",
+        "course_title": "Automated CI/CD with GitHub Actions and Docker",
+        "platform": "GitHub Docs / Udemy",
+        "estimated_hours": 15,
+        "roadmap": "1. Workflow syntax & Triggers -> 2. Automated testing & Linting -> 3. Multi-environment deployment & Secrets",
+        "resource_url": "https://docs.github.com/en/actions"
+    },
+    {
+        "skill": "Spring Boot",
+        "priority": "High",
+        "course_title": "Spring Boot 3 & Spring Cloud Microservices",
+        "platform": "Spring Academy / Udemy",
+        "estimated_hours": 35,
+        "roadmap": "1. RESTful APIs & Spring Data JPA -> 2. Spring Security & JWT -> 3. Microservices architecture with Eureka",
+        "resource_url": "https://spring.io/projects/spring-boot"
+    },
+    {
+        "skill": "Java",
+        "priority": "High",
+        "course_title": "Modern Java 17+ and Core Concurrency Engineering",
+        "platform": "Oracle University / Coursera",
+        "estimated_hours": 30,
+        "roadmap": "1. OOP & Generics -> 2. Streams API & Lambdas -> 3. Multithreading & Virtual Threads",
+        "resource_url": "https://dev.java/learn/"
+    },
+    {
+        "skill": "Redis",
+        "priority": "Medium",
+        "course_title": "Redis for In-Memory Caching & Real-Time Data",
+        "platform": "Redis University",
+        "estimated_hours": 15,
+        "roadmap": "1. Key-Value & Hashes data structures -> 2. Cache invalidation & TTL -> 3. Redis Pub/Sub & Streams",
+        "resource_url": "https://university.redis.com/"
     }
 ]
 

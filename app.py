@@ -519,14 +519,21 @@ with tab_analysis:
             from database.seed_data import JOBS_DATA
             jobs = JOBS_DATA
 
-        job_map = {f"{j['title']} — {j['company']}": j for j in jobs}
+        # Domain category filter for rapid role discovery
+        available_domains = [f"All Domains ({len(jobs)} Roles)"] + sorted(list({j.get("domain", "General Tech") for j in jobs if j.get("domain")}))
+        selected_domain = st.selectbox("Filter by Role Domain:", available_domains, label_visibility="collapsed")
+
+        filtered_jobs = jobs if selected_domain.startswith("All Domains") else [j for j in jobs if j.get("domain") == selected_domain]
+        job_map = {f"{j['title']} — {j['company']}": j for j in filtered_jobs}
         job_keys = list(job_map.keys())
         selected_job_key = st.selectbox("Select Target Opening:", job_keys) if job_keys else None
         selected_job = job_map.get(selected_job_key, jobs[0] if jobs else {"title": "Data Analyst", "company": "ABC Technologies", "required_skills": ["Python", "SQL"]})
+        st.session_state["current_target_job"] = selected_job
 
         with st.container(border=True):
-            st.markdown(f"**Role:** {selected_job.get('title', 'Role')}")
-            st.markdown(f"**Company:** {selected_job.get('company', 'Company')} &nbsp;|&nbsp; **Experience Required:** {selected_job.get('experience_years', 1)}+ years")
+            domain_label = selected_job.get('domain', 'Tech')
+            st.markdown(f"**Role:** {selected_job.get('title', 'Role')} &nbsp;•&nbsp; <span class='badge-neutral'>{domain_label}</span>", unsafe_allow_html=True)
+            st.markdown(f"**Company:** {selected_job.get('company', 'Company')} &nbsp;|&nbsp; 📍 {selected_job.get('location', 'N/A')} &nbsp;|&nbsp; ⏳ {selected_job.get('experience_years', 1)}+ yrs")
             st.markdown(f"*{selected_job.get('description', '')}*")
             st.markdown("<p style='font-size:0.8rem; font-weight:600; color:#64748B; margin-top:0.5rem; margin-bottom:0.25rem;'>REQUIRED SKILLS</p>", unsafe_allow_html=True)
             req_html = "".join([f'<span class="badge-dark">{s}</span>' for s in selected_job.get('required_skills', [])])
@@ -978,7 +985,8 @@ with tab_jobs:
         st.caption(f"Showing **{len(jobs_filtered)}** job postings:")
         for j in jobs_filtered:
             with st.container(border=True):
-                st.markdown(f"<span style='font-size:1.05rem; font-weight:700; color:#0F172A;'>{j['title']}</span> &nbsp;•&nbsp; <span style='color:#64748B;'>{j['company']}</span>", unsafe_allow_html=True)
+                dom_html = f"&nbsp;•&nbsp; <span class='badge-neutral'>{j['domain']}</span>" if j.get('domain') else ""
+                st.markdown(f"<span style='font-size:1.05rem; font-weight:700; color:#0F172A;'>{j['title']}</span> &nbsp;•&nbsp; <span style='color:#64748B;'>{j['company']}</span>{dom_html}", unsafe_allow_html=True)
                 st.markdown(f"<span style='font-size:0.82rem; color:#64748B;'>📍 {j.get('location', 'N/A')} &nbsp;|&nbsp; ⏳ {j.get('experience_years', 1)}+ yrs</span>", unsafe_allow_html=True)
                 st.markdown(f"<p style='font-size:0.85rem; color:#334155; margin-top:0.4rem;'>{j.get('description', '')}</p>", unsafe_allow_html=True)
                 badges_str = "".join([f'<span class="badge-dark">{s}</span>' for s in j.get('required_skills', [])])
@@ -989,6 +997,7 @@ with tab_jobs:
         with st.form("new_job_posting_form"):
             j_title = st.text_input("Title*", "AI Platform Engineer")
             j_company = st.text_input("Company*", "Apex Global Systems")
+            j_domain = st.selectbox("Domain*", ["AI & Machine Learning", "Data & Analytics", "Cloud & Data Engineering", "DevOps & Cloud", "Web & Full Stack", "Enterprise Systems", "Backend & Cloud"])
             j_loc = st.text_input("Location", "Bengaluru (Hybrid)")
             j_exp = st.number_input("Experience (Years)", min_value=0, max_value=15, value=2)
             j_desc = st.text_area("Description", "Engineer scalable intelligence pipelines and APIs.")
@@ -999,11 +1008,12 @@ with tab_jobs:
                 if not j_title or not j_req:
                     st.error("Title and Required Skills are required.")
                 else:
-                    new_id = get_next_id("jobs", "job_id", base_start=510)
+                    new_id = get_next_id("jobs", "job_id", base_start=520)
                     insert_job({
                         "job_id": new_id,
                         "title": j_title,
                         "company": j_company,
+                        "domain": j_domain,
                         "location": j_loc,
                         "experience_years": int(j_exp),
                         "description": j_desc,

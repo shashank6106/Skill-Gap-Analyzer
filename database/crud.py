@@ -227,6 +227,13 @@ def get_all_jobs() -> List[Dict[str, Any]]:
     """Demonstrates: find() on jobs collection."""
     try:
         db = get_database()
+        from database.seed_data import JOBS_DATA
+        # Automatically sync newly defined roles into MongoDB if not present
+        if db["jobs"].count_documents({}) < len(JOBS_DATA):
+            existing_ids = set(db["jobs"].distinct("job_id"))
+            missing_jobs = [j for j in JOBS_DATA if j["job_id"] not in existing_ids]
+            if missing_jobs:
+                db["jobs"].insert_many(missing_jobs)
         res = list(db["jobs"].find().sort("job_id", 1))
         if res:
             return res
@@ -405,6 +412,12 @@ def get_all_skills() -> List[Dict[str, Any]]:
     """Returns all canonical skills stored in MongoDB."""
     try:
         db = get_database()
+        from database.seed_data import SKILLS_DATA
+        if db["skills"].count_documents({}) < len(SKILLS_DATA):
+            existing_names = set(db["skills"].distinct("name"))
+            missing_skills = [s for s in SKILLS_DATA if s["name"] not in existing_names]
+            if missing_skills:
+                db["skills"].insert_many(missing_skills)
         res = list(db["skills"].find().sort("name", 1))
         if res:
             return res
